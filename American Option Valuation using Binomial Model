@@ -1,0 +1,39 @@
+import numpy as np
+
+S0 = 100       # initial stock price
+X = 100        # strike price
+T = 1          # time to maturity (years)
+r = 0.06       # annual risk free rate
+N = 3          # time steps
+u = 1.1        # uptick in binomial model
+d = 1/u        # downtick (ensure recombining tree)
+opt_type = 'c' # Option Type 'C' or 'P'
+
+dt = T/N                       #timestep
+disc = np.exp(-r * dt)         #discount factor
+p = (np.exp(r*dt)-d) / (u -d)  #probability of uptick factor
+
+#Stock Prices @maturity
+S = np.zeros(N+1)
+for i in range(0,N+1):
+    S[i] = S0 * u**i * d**(N-i)
+
+#payoff @maturity
+cf = np.zeros(N+1)
+for i in range(0,N+1):
+    if opt_type == 'P':
+        cf[i] = max(0, X-S[i])
+    else:
+        cf[i] = max(0, S[i]-X)
+
+#backwardation using Bionomial
+for j in range(N-1,-1,-1):
+    for i in range(0,j+1):
+        S = S0 * u**i * d**(j-i)
+        cf[i] = disc * ( p*cf[i+1] + (1-p)*cf[i] )
+        if opt_type == "P":
+          cf[i] = max(cf[i], X - S)
+        else:
+          cf[i] = max(cf[i], S - X)
+
+print("American Option Price: $", cf[0])
